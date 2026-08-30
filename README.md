@@ -15,7 +15,7 @@
 | Windows | 安装包（NSIS） | `Shotly_0.1.8_x64-setup.exe` | x64 | [下载](https://github.com/wangzhiyao66/Screenshot-tool/releases/download/v0.1.8/Shotly_0.1.8_x64-setup.exe) |
 
 - 发布页（含更新说明）：<https://github.com/wangzhiyao66/Screenshot-tool/releases/tag/v0.1.8>
-- 构建记录（GitHub 官方 Runner）：<https://github.com/wangzhiyao66/Screenshot-tool/actions/runs/33318728222>
+- 构建记录（GitHub 官方 Runner）：<https://github.com/wangzhiyao66/Screenshot-tool/actions/runs/33322129360>
 
 > macOS 包为 **universal（通用）** 单包，同时内嵌 `x86_64` 与 `arm64` 两种架构，Intel Mac 与 Apple 芯片 Mac 均可直接运行，无需区分下载。
 
