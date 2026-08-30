@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>轻量级跨平台截图工具 · 竞品与技术调研报告</title>
+<style>
+:root{
+  --bg:#ffffff; --panel:#f7f8fa; --ink:#1f2328; --ink-soft:#57606a;
+  --line:#e3e6ea; --accent:#c2410c; --accent-soft:#fdf3ee; --code-bg:#f6f8fa;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  font-size:15.5px; line-height:1.85; letter-spacing:.01em;
+}
+.wrap{max-width:920px; margin:0 auto; padding:56px 32px 96px}
+h1{
+  font-size:30px; line-height:1.35; font-weight:700; letter-spacing:-.01em;
+  margin:0 0 28px; padding-bottom:20px; border-bottom:2px solid var(--ink);
+}
+h2{
+  font-size:21px; font-weight:700; margin:56px 0 18px; padding:0 0 10px;
+  border-bottom:1px solid var(--line);
+}
+h3{font-size:17px; font-weight:650; margin:34px 0 12px; color:var(--ink)}
+p{margin:0 0 14px}
+strong{font-weight:650}
+a{color:var(--accent); text-decoration:none; border-bottom:1px solid rgba(194,65,12,.3)}
+a:hover{border-bottom-color:var(--accent)}
+ul,ol{margin:0 0 16px; padding-left:24px}
+li{margin:5px 0}
+blockquote{
+  margin:20px 0; padding:16px 20px; background:var(--accent-soft);
+  border-left:3px solid var(--accent); border-radius:0 6px 6px 0; color:#3f2a20;
+}
+blockquote p{margin:0}
+blockquote p + p{margin-top:10px}
+hr{border:0; border-top:1px solid var(--line); margin:44px 0}
+code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.88em;
+  background:var(--code-bg); padding:2px 6px; border-radius:4px; border:1px solid var(--line);
+}
+pre{
+  background:var(--code-bg); border:1px solid var(--line); border-radius:8px;
+  padding:16px 18px; overflow-x:auto; margin:18px 0;
+}
+pre code{background:none; border:0; padding:0; font-size:13px; line-height:1.7}
+table{
+  width:100%; border-collapse:collapse; margin:22px 0; font-size:13.5px;
+  display:block; overflow-x:auto; white-space:nowrap;
+}
+thead th{
+  background:var(--panel); font-weight:650; text-align:left;
+  padding:10px 12px; border-bottom:2px solid var(--line); border-top:1px solid var(--line);
+  white-space:nowrap;
+}
+tbody td{padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top}
+tbody tr:hover{background:#fcfcfd}
+tbody td:nth-child(n+2), thead th:nth-child(n+2){text-align:center}
+tbody td:first-child{font-weight:600; white-space:nowrap; text-align:left}
+h2 + p > em,blockquote > p > em{color:var(--ink-soft)}
+@media (max-width:640px){
+  .wrap{padding:32px 18px 64px}
+  h1{font-size:24px}
+  body{font-size:15px}
+}
+@media print{
+  body{font-size:11pt}
+  .wrap{max-width:none; padding:0}
+  h2{page-break-after:avoid}
+  table{page-break-inside:avoid}
+  a{border:0; color:#000}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1 id="_1">轻量级跨平台截图工具 · 竞品与技术调研报告</h1>
+<blockquote>
+<p>调研日期：2026-08-30　|　目标：从零做一款 macOS + Windows 双端可用的<strong>轻量级</strong>桌面截图工具
+数据来源：官网 / App Store / GitHub / Reddit / V2EX / 知乎 / 少数派 / 微软 &amp; Apple 官方文档
+说明：聚合站（toolradar、coldiq 一类 AI 生成页）价格互相打架，已全部以一手来源为准；无法查证的内容均标注「未查证」。</p>
+</blockquote>
+<hr />
+<h2 id="tldr">零、结论先行（TL;DR）</h2>
+<ol>
+<li><strong>市场不缺截图工具，缺的是"两端都一流 + 真正轻量"的那一款。</strong> Mac 侧是 CleanShot X / Shottr 的天下，Windows 侧是 ShareX / Snipaste / PixPin 的天下，同一人在两台机器上用同一款工具、得到一致体验——目前基本无解。</li>
+<li><strong>"轻量"是真实且被低估的护城河。</strong> Shottr 2.3MB、Greenshot 4MB、ShareX 6.6MB 的口碑，直接对照 PixPin（Mac 版近 100MB、内存泄漏投诉）和 Kap（Electron 200–400MB）。社区对"常驻工具吃内存"的容忍度极低。</li>
+<li><strong>长截图是全行业最不稳的功能。</strong> 几乎每一款工具的评论区都在吐槽拼接错位 / 挑 App，同时它又是国内用户（被 QQ、微信训练过）的硬性期望。做得稳 = 直接建立差异化。</li>
+<li><strong>Windows 端的第三方缺口远大于 macOS。</strong> Win11 自带工具至今无长截图、无贴图；macOS 自带 Cmd+Shift+3/4/5 + Markup 除了长截图已基本够用。<strong>先做 Windows 更容易拿到第一批用户。</strong></li>
+<li><strong>技术选型建议：Tauri 2.0（Rust + 系统 WebView）</strong>，底层用 <code>xcap</code> 调两端原生采集 API。Electron 与"轻量"诉求直接冲突，Flutter 桌面内存偏高且截图要全自写，Qt 是 Snipaste 验证过的正路但人力成本高。</li>
+</ol>
+<hr />
+<h2 id="_2">一、市场地图：四类玩家</h2>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>代表产品</th>
+<th>定位</th>
+<th>对你的意义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>系统自带基线</strong></td>
+<td>macOS 截图（Cmd+Shift+3/4/5）、Windows Snipping Tool / Xbox Game Bar</td>
+<td>免费、免装、够用</td>
+<td>这是你的"及格线"，用户不会为低于自带体验的功能付费</td>
+</tr>
+<tr>
+<td><strong>单端王者</strong></td>
+<td>Mac：CleanShot X、Shottr、iShot、Xnip；Win：ShareX、Snipaste、FastStone、ScreenToGif</td>
+<td>深挖一端，体验极致</td>
+<td>你的直接对手。跨平台的代价是每一端都打不过它们，必须靠"一致 + 轻量"补足</td>
+</tr>
+<tr>
+<td><strong>国产跨平台全家桶</strong></td>
+<td>PixPin、VeryCapture、eSearch、uTools 截图插件</td>
+<td>长截图 + 贴图 + OCR 一把梭</td>
+<td>最接近你想做的形态，也是要重点研究其失误的地方</td>
+</tr>
+<tr>
+<td><strong>重型生产力套件</strong></td>
+<td>Snagit、Screenpresso、Snagit + Camtasia</td>
+<td>面向企业 / 文档流程，订阅制</td>
+<td>不是你的赛道，但其"步骤编号""智能打码"值得抄</td>
+</tr>
+</tbody>
+</table>
+<p>一个值得注意的信号：<strong>Snipaste、PixPin、eSearch、Flameshot 都在往跨平台走，但都还没走通。</strong> 这说明需求真实存在，只是实现门槛（两端原生 API 差异巨大）把大多数人拦住了。</p>
+<hr />
+<h2 id="_3">二、功能矩阵</h2>
+<h3 id="21-windows">2.1 跨平台 / Windows 侧</h3>
+<p>✓ 支持　✗ 不支持　— 弱支持或未查证</p>
+<table>
+<thead>
+<tr>
+<th>工具</th>
+<th>开源</th>
+<th>定价</th>
+<th>区域</th>
+<th style="text-align: center;">控件识别</th>
+<th style="text-align: center;">长截图</th>
+<th style="text-align: center;">贴图 Pin</th>
+<th style="text-align: center;">标注</th>
+<th style="text-align: center;">OCR</th>
+<th style="text-align: center;">取色</th>
+<th style="text-align: center;">录屏/GIF</th>
+<th style="text-align: center;">图床</th>
+<th style="text-align: center;">历史管理</th>
+<th style="text-align: center;">多屏</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ShareX</strong></td>
+<td>GPL-3.0（~30k star）</td>
+<td>免费</td>
+<td>✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓/✓</td>
+<td style="text-align: center;">✓（80+）</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><strong>Snipaste</strong></td>
+<td>闭源</td>
+<td>个人免费，Pro ¥45/1台、¥99/3台</td>
+<td>✓</td>
+<td style="text-align: center;">✓✓</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓(Pro)</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗/✗</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><strong>PixPin</strong></td>
+<td>闭源</td>
+<td>免费 + 会员 9元/月、80元/年、198元终身</td>
+<td>✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">—/✓</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><strong>Flameshot</strong></td>
+<td>GPL-3.0（~28k star）</td>
+<td>免费</td>
+<td>✓</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗/✗</td>
+<td style="text-align: center;">—(Imgur)</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><strong>Greenshot</strong></td>
+<td>GPL-3.0（~4.9k star）</td>
+<td>免费 / 捐赠</td>
+<td>✓</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—(仅IE)</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓(插件)</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗/✗</td>
+<td style="text-align: center;">✓(插件)</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><strong>PicPick</strong></td>
+<td>闭源</td>
+<td>个人免费，商业 $24.99–29.99（未查证官方）</td>
+<td>✓</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓/—</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><strong>LightShot</strong></td>
+<td>闭源</td>
+<td>免费</td>
+<td>✓</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗/✗</td>
+<td style="text-align: center;">✓(prnt.sc)</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">—</td>
+</tr>
+<tr>
+<td><strong>Screenpresso</strong></td>
+<td>闭源</td>
+<td>Free / PRO €29.99 买断</td>
+<td>✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓(PRO)</td>
+<td style="text-align: center;">✓(PRO)</td>
+<td style="text-align: center;">✓/—</td>
+<td style="text-align: center;">✓(143)</td>
+<td style="text-align: center;">✓✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><strong>Snagit</strong></td>
+<td>闭源</td>
+<td>Individual $39/年，Business $48/人/年，买断 $62.99</td>
+<td>✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓✓</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓/✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><strong>FastStone Capture</strong></td>
+<td>闭源</td>
+<td>$19.95 买断</td>
+<td>✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓/—</td>
+<td style="text-align: center;">✓(FTP)</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><strong>ScreenToGif</strong></td>
+<td>MS-PL（~27k star）</td>
+<td>免费</td>
+<td>—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓/✓✓</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><strong>VeryCapture</strong></td>
+<td>已开源</td>
+<td>免费 / Pro $1月、$15终身</td>
+<td>✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓/✓</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><strong>eSearch</strong></td>
+<td>GPL-3.0（~6.6k star，Electron）</td>
+<td>免费</td>
+<td>✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓(万向)</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓/—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><strong>Snipping Tool</strong></td>
+<td>系统自带</td>
+<td>免费</td>
+<td>✓</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓/✗</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><strong>QQ / 微信截图</strong></td>
+<td>—</td>
+<td>免费（需登录）</td>
+<td>✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">QQ✓/微信✗</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">QQ✓</td>
+<td style="text-align: center;">✗/✗</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">QQ✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+</tbody>
+</table>
+<h3 id="22-macos">2.2 macOS 侧</h3>
+<table>
+<thead>
+<tr>
+<th>工具</th>
+<th>体积</th>
+<th>定价</th>
+<th>区域</th>
+<th style="text-align: center;">长截图</th>
+<th style="text-align: center;">贴图</th>
+<th style="text-align: center;">标注</th>
+<th style="text-align: center;">OCR</th>
+<th style="text-align: center;">取色</th>
+<th style="text-align: center;">录屏/GIF</th>
+<th>图床</th>
+<th style="text-align: center;">快捷键自定义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CleanShot X</strong></td>
+<td>~70–76MB</td>
+<td>$29 买断（含1年更新，续 $19/年）；Cloud $8/月</td>
+<td>✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓/✓</td>
+<td>✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><strong>Shottr</strong></td>
+<td><strong>2.3MB</strong></td>
+<td>免费；Basic $12 / Friends $30 买断</td>
+<td>✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓(16种)</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗/✗</td>
+<td>✓(需自备S3)</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><strong>Snipaste</strong></td>
+<td>—</td>
+<td>个人免费，Pro ¥45 起</td>
+<td>✓</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓(Pro)</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗/✗</td>
+<td>✗</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><strong>iShot / iShot Pro</strong></td>
+<td>56–64MB</td>
+<td>¥28/年，买断 ¥78</td>
+<td>✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓/✓</td>
+<td>—</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><strong>Xnip</strong></td>
+<td><strong>7.5MB</strong></td>
+<td>免费（带水印）+ 内购</td>
+<td>✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗/✗</td>
+<td>✗</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><strong>PixPin</strong></td>
+<td>~45–125MB</td>
+<td>免费 + 会员</td>
+<td>✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓(本地PearOCR)</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓/✓</td>
+<td>—</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><strong>Snagit</strong></td>
+<td>—</td>
+<td>同上</td>
+<td>✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓/✓</td>
+<td>✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><strong>macOS 自带</strong></td>
+<td>—</td>
+<td>免费</td>
+<td>✓</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">基础Markup</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓/✗</td>
+<td>✗</td>
+<td style="text-align: center;">✗</td>
+</tr>
+<tr>
+<td><strong>TextSniper</strong></td>
+<td>—</td>
+<td>$7.99/1台、$9.99/3台</td>
+<td>—</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✗/✗</td>
+<td>✗</td>
+<td style="text-align: center;">✓</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Skitch</strong>（Evernote）已于 2016 年停更，M 系芯片上启动崩溃，属 abandonware，<strong>不应作为对标</strong>。</p>
+</blockquote>
+<hr />
+<h2 id="_4">三、用户真实吐槽（按出现频率排序）</h2>
+<p>这些是社区反复出现、且竞品长期没有解决的问题，也就是你的机会清单：</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>痛点</th>
+<th>具体表现</th>
+<th>涉及工具</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>长截图不可靠</strong></td>
+<td>系统升级后失效、部分 App 滚不动、拼接错位、Electron 应用直接失败</td>
+<td>Shottr、CleanShot X、Snipaste（明确不做）、Xnip</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>内存 / 性能</strong></td>
+<td>Mac 版内存泄漏（PixPin 有专帖：3.4.3.2 每次 Retina 截图泄漏约 36MB，35 次累计约 2.8GB）、Electron 常驻 200–400MB、唤出延迟 1–2 秒</td>
+<td>PixPin、Kap、eSearch</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>跨平台体验割裂</strong></td>
+<td>Mac 用 CleanShot、Win 用 Snipaste，快捷键、标注手感、输出格式全不一样</td>
+<td>全行业</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>订阅疲劳</strong></td>
+<td>iShot 2022 年转订阅引发 V2EX 大规模流失；Snagit 新购已取消买断</td>
+<td>iShot、Snagit</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>注册 / 隐私门槛</strong></td>
+<td>PixPin 注册要手机号；图床默认上传引发合规担忧</td>
+<td>PixPin、LightShot</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>权限劝退</strong></td>
+<td>用户勾完 Screen Recording 没 Cmd+Q 重启，以为软件坏了</td>
+<td>所有 macOS 工具</td>
+</tr>
+<tr>
+<td>7</td>
+<td><strong>上手成本</strong></td>
+<td>ShareX 500+ 设置项，新手配置 3–5 小时</td>
+<td>ShareX</td>
+</tr>
+<tr>
+<td>8</td>
+<td><strong>企业环境限制</strong></td>
+<td>组策略封禁 Snipping Tool、DLP 在驱动层拦截 GDI/DirectX、需要免安装便携版</td>
+<td>Windows 侧全部</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>一个极端案例值得记住：LightShot 的 <code>prnt.sc</code> 六位短链可被枚举，WIRED 抽查 11000 个随机链接，命中 529 张有效图，其中约 8% 含敏感信息。<strong>图床功能默认关闭</strong>应是设计原则，而非选项。</p>
+</blockquote>
+<hr />
+<h2 id="mvp">四、两端用户需求差异（决定了 MVP 的取舍）</h2>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>Windows</th>
+<th>macOS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>自带基线</td>
+<td>弱：无长截图、无贴图，Win11 才补 OCR/录屏</td>
+<td>强：Cmd+Shift+3/4/5 + Markup + Retina 2x，除长截图外基本够用</td>
+</tr>
+<tr>
+<td>刚需缺口</td>
+<td><strong>长截图 + 贴图 + 智能控件识别</strong></td>
+<td>长截图、OCR、取色、美化</td>
+</tr>
+<tr>
+<td>分享习惯</td>
+<td>依赖"截图→上传→拿链接"闭环（ShareX 80+ 目的地即此产物）</td>
+<td>偏好系统分享面板 / AirDrop / 拖拽，图床文化弱</td>
+</tr>
+<tr>
+<td>企业变量</td>
+<td>组策略、AppLocker、Intune、DLP 驱动级拦截 → <strong>便携免安装是刚需</strong></td>
+<td>几乎无</td>
+</tr>
+<tr>
+<td>硬件碎片</td>
+<td>混合 DPI（125%/150%）、多 GPU、HDR、显示器热插拔 → 高频 bug 源</td>
+<td>Retina 统一，刘海屏需注意</td>
+</tr>
+<tr>
+<td>肌肉记忆</td>
+<td>被 QQ <code>Ctrl+Alt+A</code> / 微信 <code>Alt+A</code> 训练过</td>
+<td><code>Cmd+Shift+4</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>推论：先在 Windows 上打磨，更容易获得第一批用户；但 macOS 端必须同步，否则"跨平台"这个卖点不成立。</strong></p>
+<hr />
+<h2 id="_5">五、技术选型</h2>
+<h3 id="51">5.1 桌面框架对比（截图工具场景）</h3>
+<p>截图工具的特征是「<strong>薄 UI + 重系统调用</strong>」——UI 层只负责选区框与标注画布，真正的活儿全在系统原生采集 API 上。</p>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>安装包典型值</th>
+<th>冷启动内存</th>
+<th>调用原生截图 API</th>
+<th>生态</th>
+<th>已知案例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Tauri 2.0</strong>（Rust + 系统 WebView）</td>
+<td>3–10MB（实测 exe 4.8MB / dmg 5.2MB）</td>
+<td>30–50MB（实测 36MB）</td>
+<td>好：<code>xcap</code> crate 已封装 macOS=ScreenCaptureKit、Windows=WGC+GDI</td>
+<td><code>tauri-plugin-screenshots</code>、<code>global-shortcut</code>、<code>updater</code></td>
+<td>Coco AI 等</td>
+</tr>
+<tr>
+<td><strong>Electron</strong></td>
+<td>80–150MB（实测 142MB）</td>
+<td>118–300MB</td>
+<td>弱：<code>desktopCapturer</code> 底层不可控，常需外挂 Swift/C++ helper</td>
+<td>最成熟</td>
+<td>Kap、eSearch</td>
+</tr>
+<tr>
+<td><strong>Flutter Desktop</strong></td>
+<td>30–60MB</td>
+<td>默认 180–250MB，优化后 ~95MB</td>
+<td>差：需 FFI 自己写两端原生</td>
+<td>桌面插件稀缺</td>
+<td>未查证到截图工具案例</td>
+</tr>
+<tr>
+<td><strong>Qt（C++）</strong></td>
+<td>较大（Snipaste macOS 包 137MB 含 Qt 全量）</td>
+<td>低</td>
+<td><strong>最好</strong>：C++ 直接调两端 SDK</td>
+<td>成熟</td>
+<td><strong>Snipaste、Flameshot、xland/ScreenCapture</strong></td>
+</tr>
+<tr>
+<td><strong>原生双端（Swift + C#）</strong></td>
+<td>最小</td>
+<td>最低</td>
+<td><strong>最好</strong>，新 API 首日可用</td>
+<td>—</td>
+<td>CleanShot X、Shottr、ShareX</td>
+</tr>
+<tr>
+<td><strong>Wails（Go）</strong></td>
+<td>15–20MB（社区数据，未查证）</td>
+<td>50–100MB（未查证）</td>
+<td>一般：截图类绑定少</td>
+<td>最小</td>
+<td>未查证到截图工具类案例</td>
+</tr>
+</tbody>
+</table>
+<p><strong>建议：Tauri 2.0。</strong> 理由：体积和内存达标（这是"轻量"的硬指标），Rust 侧 <code>xcap</code> / <code>scap</code> 已经把两端采集 API 封装好，UI 用 Web 技术做标注画布开发效率最高。风险是 WebKit（macOS）与 WebView2（Windows）的渲染差异需要双端各调一次。</p>
+<h3 id="52-macos">5.2 macOS 采集方案</h3>
+<table>
+<thead>
+<tr>
+<th>API</th>
+<th>最低系统</th>
+<th style="text-align: center;">可捕获单窗口</th>
+<th>权限</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SCScreenshotManager</code>（<code>captureImage</code> / <code>captureSampleBuffer</code>）</td>
+<td><strong>macOS 14.0+</strong></td>
+<td style="text-align: center;">✅（配合 <code>SCContentFilter</code>）</td>
+<td>Screen Recording</td>
+<td><strong>静态截图首选</strong>，替代已标 obsolete 的 <code>CGWindowListCreateImage</code></td>
+</tr>
+<tr>
+<td>ScreenCaptureKit <code>SCStream</code></td>
+<td>macOS 12.3+</td>
+<td style="text-align: center;">✅</td>
+<td>Screen Recording</td>
+<td>录制用。WWDC22 数据：同场景 CGWindowList 7fps → SCK 60fps，内存 -15%、CPU -50%</td>
+</tr>
+<tr>
+<td><code>CGWindowListCreateImage</code></td>
+<td>10.5+（头文件已标 <code>SCREEN_CAPTURE_OBSOLETE</code>）</td>
+<td style="text-align: center;">✅</td>
+<td>Screen Recording</td>
+<td>CPU 高、阻塞主线程，仅作老系统兜底</td>
+</tr>
+<tr>
+<td><code>AVCaptureScreenInput</code></td>
+<td>10.7+</td>
+<td style="text-align: center;">✗ 仅整屏</td>
+<td>Screen Recording</td>
+<td>可配 scaleFactor、光标开关</td>
+</tr>
+</tbody>
+</table>
+<p><strong>权限（TCC）矩阵</strong></p>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>必需权限</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>区域 / 窗口 / 全屏截图、取色、标尺</td>
+<td><strong>Screen Recording</strong></td>
+</tr>
+<tr>
+<td><strong>长截图 / 滚动截屏</strong>（程序化滚动、点击窗口）</td>
+<td>Screen Recording + <strong>Accessibility（辅助功能）</strong></td>
+</tr>
+<tr>
+<td>控件级智能识别（<code>AXUIElement</code>）</td>
+<td>Accessibility</td>
+</tr>
+<tr>
+<td>全局快捷键并"吞掉"按键</td>
+<td><strong>Input Monitoring</strong></td>
+</tr>
+<tr>
+<td>贴图浮窗、菜单栏常驻、本地 OCR（Vision）</td>
+<td>不需要</td>
+</tr>
+</tbody>
+</table>
+<p><strong>最高频的坑（务必要在 UI 里显式引导）</strong>：授权后<strong>必须完全退出（Cmd+Q）再启动</strong>才生效，只关窗口无效。
+检测用 <code>CGPreflightScreenCaptureAccess()</code>，申请用 <code>CGRequestScreenCaptureAccess()</code>，跳转设置用 <code>x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture</code>。</p>
+<p><strong>其他坑</strong>：
+- 三套坐标系并存：<code>NSScreen.frame</code>（左下原点 / points）、<code>kCGWindowBounds</code>（左上原点 / points）、截图缓冲（物理像素）。
+- 副屏在主屏左侧时坐标为负。
+- Retina：<code>backingScaleFactor</code> 换算。工程上推荐「<strong>整屏按原生分辨率抓取 + 内存裁剪</strong>」，而不是让 SCK 直接抓选区（社区反馈 <code>captureResolution = .best</code> 仍可能返回逻辑分辨率，未查证 Apple 官方结论）。
+- 刘海屏用 <code>NSScreen.safeAreaInsets</code>；多桌面/全屏窗口用 <code>optionOnScreenOnly</code> 过滤。
+- 全局快捷键优先用 Carbon <code>RegisterEventHotKey</code>（<strong>无需任何权限</strong>），<code>NSEvent</code> 全局监听与 <code>CGEventTap</code> 都要辅助功能/输入监控权限。</p>
+<h3 id="53-windows">5.3 Windows 采集方案</h3>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>最低系统</th>
+<th style="text-align: center;">单窗口</th>
+<th style="text-align: center;">需管理员</th>
+<th style="text-align: center;">DX/游戏画面</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Windows.Graphics.Capture</strong>（WGC）</td>
+<td>Win10（社区对 1803/1903 说法不一，运行时用 <code>GraphicsCaptureSession.IsSupported()</code> 判断）</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✅</td>
+<td>官方推荐。可抓被遮挡/最小化窗口，系统画黄框。HDR 屏需全程 <code>DXGI_FORMAT_R16G16B16A16_FLOAT</code> 避免过曝</td>
+</tr>
+<tr>
+<td><strong>DXGI Desktop Duplication</strong></td>
+<td>Win8+</td>
+<td style="text-align: center;">✗（整屏后裁剪）</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✅ 最佳（OBS 采用）</td>
+<td>1080p 约 2–8ms，<code>GetFrameDirtyRects</code> 脏矩形</td>
+</tr>
+<tr>
+<td><strong>GDI <code>BitBlt</code></strong></td>
+<td>全版本</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✗ 常黑屏/撕裂</td>
+<td>20–50ms@1080p，未声明 DPI 感知会模糊/错位</td>
+</tr>
+<tr>
+<td><code>PrintWindow</code>（+<code>PW_RENDERFULLCONTENT</code>）</td>
+<td>—</td>
+<td style="text-align: center;">✅ 后台窗口</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✗ 常黑</td>
+<td>兜底</td>
+</tr>
+</tbody>
+</table>
+<p><strong>工程实践：三级降级 <code>WGC → DXGI → GDI</code></strong>（OBS、WPS 屏幕共享均如此）。</p>
+<p><strong>高 DPI（截图错位的 90% 根源）</strong>：启动时 <code>SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)</code>（Win10 1703+），运行时 <code>GetDpiForWindow</code>。未声明感知时 <code>SM_CXVIRTUALSCREEN</code> 与 BitBlt 结果都会被虚拟化缩放。做法同样是「<strong>全屏按物理像素抓 + 内存裁剪</strong>」，绕开 <code>CopyFromScreen</code> 被二次缩放的问题。</p>
+<p><strong>窗口/控件智能识别（四层叠加）</strong>：
+1. <strong>UI Automation</strong>：<code>ElementFromPoint()</code> 直接拿到鼠标下元素及 <code>BoundingRectangle</code>，对 WPF / WinForms / 浏览器 / Store 应用最准（Chrome 需 <code>--force-renderer-accessibility</code>）；
+2. <strong>MSAA / <code>AccessibleObjectFromWindow</code></strong>：老框架兜底；
+3. <strong>Win32 子窗口枚举</strong>：<code>WindowFromPoint</code> → <code>ChildWindowFromPointEx</code>（<code>CWP_SKIPINVISIBLE</code> 用来过滤掉自己那层全屏遮罩）→ <code>RealChildWindowFromPoint</code>，再用 <code>DWMWA_EXTENDED_FRAME_BOUNDS</code> 排除窗口阴影；
+4. <strong>边缘检测 / 轮廓识别</strong>：给 Electron、Qt、Skia、Canvas 自绘 UI 兜底（这类窗口在 Inspect 里根本没有控件树，新版微信 4.x 就是）。</p>
+<p><strong>常见坑</strong>：多显示器负坐标（<code>SM_XVIRTUALSCREEN</code>）；HDR/10bit 需 FLOAT 管线；捕获 UAC 提权窗口自身需管理员；<strong>以管理员运行时 OLE 拖拽失效</strong>（UIPI 限制，常规做法是主进程不提权、按需拉起提权子进程）；<code>RegisterHotKey</code> 仅支持「修饰符+单键」且注册后独占该组合。</p>
+<h3 id="54">5.4 附加能力</h3>
+<p><strong>长截图</strong>（两端同思路，无成熟跨平台库）：选区 → 模拟滚轮 → 逐帧抓 → 重叠检测 → 拼接。</p>
+<pre><code>loop {
+  frame = capture(region)
+  dy    = findOverlap(prev, frame)      // SSD 或 Sobel + 归一化互相关
+  if dy == 0: break
+  scroll(wheel, dy); sleep(settle ≈ 100ms)
+  stitch(prev, frame, dy)
+}
+</code></pre>
+<ul>
+<li>Windows：<code>SendInput</code> 滚轮 + WGC/BitBlt。开源参考：xland/ScreenCapture（Qt，SSD + QtConcurrent 并行匹配）、scrollshot（Rust，Sobel 梯度 + 模板匹配）。</li>
+<li>macOS：<code>CGEventCreateScrollWheelEvent</code> + SCK 抓帧，或读 <code>AXUIElement</code> 滚动值。<strong>成熟的 macOS 长截图开源库：未查证到</strong>——这意味着这块要自己写，也意味着它是护城河。</li>
+</ul>
+<p><strong>录屏 / GIF</strong>：macOS 走 SCK → <code>AVAssetWriter</code>（三个坑：设 <code>movieFragmentInterval</code> 防崩溃丢文件；SCK 节能机制会让静态画面时长算成 1 秒，停止时需补写最后一帧；<strong>窗口捕获模式在副屏会丢失右键菜单等子窗口</strong>，改用显示器/区域模式）。Windows 走 Desktop Duplication 或 WGC → Media Foundation。GIF 编码可选 Rust <code>gifski</code>（质量最优）或 <code>gif</code> + <code>imagequant</code>。</p>
+<p><strong>OCR 选型</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>体积增量</th>
+<th>中文准确率</th>
+<th>建议</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Apple Vision（<code>VNRecognizeTextRequest</code>）</td>
+<td><strong>0</strong></td>
+<td>好</td>
+<td>macOS 10.15+ 默认方案</td>
+</tr>
+<tr>
+<td>Windows OCR（<code>Windows.Media.Ocr</code>）</td>
+<td><strong>0</strong></td>
+<td>中–好</td>
+<td>Win10+，需系统已装语言包</td>
+</tr>
+<tr>
+<td>PaddleOCR（PP-OCRv4 mobile）</td>
+<td>~8–17MB</td>
+<td>最高（92–97%）</td>
+<td>作为"高精度中文"按需下载</td>
+</tr>
+<tr>
+<td>Tesseract 5</td>
+<td>语言包数十 MB</td>
+<td>85–90%，慢</td>
+<td>不推荐</td>
+</tr>
+</tbody>
+</table>
+<p><strong>建议默认走系统原生 OCR（零体积），把 PaddleOCR 做成可选模型下载</strong>——既守住"轻量"，又不牺牲中文场景。</p>
+<p><strong>贴图 / 置顶</strong>：macOS 用 <code>NSWindow</code>（<code>.borderless</code> + <code>level: .floating</code> + <code>collectionBehavior: [.canJoinAllSpaces, .fullScreenAuxiliary]</code> + <code>ignoresMouseEvents</code> 穿透）；Windows 用 <code>WS_EX_TOOLWINDOW | WS_EX_LAYERED</code> + <code>SetWindowPos(HWND_TOPMOST)</code>。选区交互的统一做法：<strong>每个显示器一个全屏透明无边框覆盖层</strong>。</p>
+<p><strong>打包分发</strong>：
+- macOS：<code>codesign --options runtime --timestamp</code> → <code>xcrun notarytool submit --wait</code>（通常 1–15 分钟）→ <code>xcrun stapler staple</code>；更新用 <strong>Sparkle 2</strong>（支持 delta）。
+- Windows：微软官方口径——<strong>EV 证书自 2024 年起不再即时绕过 SmartScreen</strong>；可选 Azure Artifact Signing（约 $9.99/月，限部分地区组织）或 OV 证书（$150–300/年）。<code>signtool</code> 务必加 RFC3161 时间戳。更新用 <strong>Velopack</strong>（Squirrel.Windows 的活跃继任）。</p>
+<hr />
+<h2 id="mvp_1">六、MVP 功能建议</h2>
+<h3 id="61">6.1 定位建议</h3>
+<blockquote>
+<p><strong>一款两端体验完全一致、冷启动 &lt; 300ms、常驻内存 &lt; 60MB 的截图工具，先把"区域截图 + 标注 + 贴图 + 长截图"四件事做到不输任何人。</strong></p>
+</blockquote>
+<p>不要在第一版做录屏、不要做图床、不要做账号系统。这三样是体积、复杂度和合规风险的主要来源。</p>
+<h3 id="62">6.2 功能优先级</h3>
+<p><strong>P0 —— 生死线（做不到就别发布）</strong></p>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>说明</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>区域截图</td>
+<td>拖拽选区 + 像素级微调（方向键）</td>
+<td>两端必须一致</td>
+</tr>
+<tr>
+<td>窗口 / 控件智能识别</td>
+<td>Win 走 UIA→MSAA→Win32子窗口→轮廓四层；Mac 走 CGWindowList + AXUIElement</td>
+<td>差异化的关键点</td>
+</tr>
+<tr>
+<td>全屏 / 多显示器截图</td>
+<td>正确处理负坐标与混合 DPI</td>
+<td>高频 bug 源，早测</td>
+</tr>
+<tr>
+<td>标注</td>
+<td>矩形、椭圆、箭头、线条、铅笔、马赛克、文字、序号</td>
+<td>序号（步骤编号）性价比极高</td>
+</tr>
+<tr>
+<td>贴图 Pin</td>
+<td>置顶、缩放、旋转、透明度、鼠标穿透</td>
+<td>Snipaste 的灵魂功能，Windows 端刚需</td>
+</tr>
+<tr>
+<td>保存 / 复制</td>
+<td>保存到磁盘、复制到剪贴板</td>
+<td>剪贴板同时写入图片与文件路径</td>
+</tr>
+<tr>
+<td>全局快捷键</td>
+<td>可自定义，默认避开 <code>Ctrl+Alt+A</code> / <code>Alt+A</code></td>
+<td>Mac 用 <code>RegisterEventHotKey</code> 免权限</td>
+</tr>
+<tr>
+<td>Retina / 高 DPI 正确</td>
+<td>物理像素抓取 + 内存裁剪</td>
+<td>做不到 = 差评</td>
+</tr>
+<tr>
+<td>轻量</td>
+<td>冷启动 &lt; 300ms，常驻 &lt; 60MB，包体 &lt; 10MB</td>
+<td><strong>写进验收标准</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>P1 —— 差异化（建立口碑）</strong></p>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>长截图（滚动截屏）</strong></td>
+<td>全行业最不稳，做稳就是招牌。含手动兜底模式（自动滚动失败时允许手动滚）</td>
+</tr>
+<tr>
+<td>本地 OCR</td>
+<td>默认系统原生（零体积），可选下载 PaddleOCR 模型</td>
+</tr>
+<tr>
+<td>取色器</td>
+<td>HEX / RGB / HSL / OKLCH，含 APCA 对比度（对标 Shottr）</td>
+</tr>
+<tr>
+<td>截图历史</td>
+<td>本地时间线，支持回放与搜索</td>
+</tr>
+<tr>
+<td>免安装便携版</td>
+<td>Windows 企业环境刚需</td>
+</tr>
+<tr>
+<td>截图后动作</td>
+<td>复制到剪贴板 / 保存 / 打开编辑器，可配置（先不做上传）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>P2 —— 后置（验证需求后再做）</strong></p>
+<ul>
+<li>屏幕录制 / GIF（体积与复杂度都高，Mac 端 SCK 坑多）</li>
+<li>图床上传（<strong>默认关闭</strong>，且必须能一键彻底禁用——参考 LightShot 事故）</li>
+<li>水印 / 带壳美化 / Backdrop</li>
+<li>自动打码敏感信息（邮箱 / 卡号 / token 正则识别）</li>
+<li>快捷键工作流 / 插件系统</li>
+</ul>
+<h3 id="63">6.3 差异化三板斧</h3>
+<ol>
+<li><strong>不挑 App 的长截图</strong> —— 自动滚动 + 手动兜底 + 失败可回退为「手动拼接」，并把"拼接失败"做成可见的提示而非静默产出错图。</li>
+<li><strong>可量化、可公开的性能承诺</strong> —— 在官网明写包体、冷启动、常驻内存三个数字，并持续公开。在"Electron 全家桶"横行的品类里，这是最有说服力的营销。</li>
+<li><strong>默认本地、默认无账号</strong> —— 不联网也能用全部核心功能，OCR 在本地跑，图床（若做）默认关闭。这是对抗 PixPin（注册要手机号）最直接的一刀。</li>
+</ol>
+<p><strong>商业模式建议</strong>：一次买断（参考 Shottr $12 / iShot Pro ¥78 / Snipaste ¥45），避免订阅制——iShot 2022 转订阅引发的流失是前车之鉴。</p>
+<hr />
+<h2 id="_6">七、风险与待验证清单</h2>
+<table>
+<thead>
+<tr>
+<th>风险</th>
+<th>影响</th>
+<th>应对</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WebKit / WebView2 渲染差异</td>
+<td>双端 UI 不一致，返工</td>
+<td>早期就做双端并行验证，不要等到功能做完</td>
+</tr>
+<tr>
+<td>macOS 长截图无成熟库</td>
+<td>开发周期不可控</td>
+<td>列为技术预研第一项，先出可运行 demo 再排期</td>
+</tr>
+<tr>
+<td>各显示器混合 DPI</td>
+<td>截图错位，最易引发差评</td>
+<td>建一个"125% + 150% 双屏"的测试环境</td>
+</tr>
+<tr>
+<td>macOS 权限引导</td>
+<td>用户以为软件坏了</td>
+<td>做权限自检页 + 一键跳转 + "请 Cmd+Q 重启"文案</td>
+</tr>
+<tr>
+<td>签名公证成本</td>
+<td>Windows OV 证书 $150–300/年</td>
+<td>早期可用免签名分发 + 明确说明，验证需求后再买</td>
+</tr>
+<tr>
+<td>企业 DLP 拦截</td>
+<td>部分环境完全无法截图</td>
+<td>无法规避，需在文档中说明</td>
+</tr>
+<tr>
+<td>与 QQ/微信快捷键冲突</td>
+<td>用户唤不起来</td>
+<td>首次启动检测冲突并提示改键</td>
+</tr>
+</tbody>
+</table>
+<p><strong>明确未查证、需自行实测的点</strong>：WGC 最低系统版本（1803 vs 1903 说法不一）、macOS App Store 沙盒下的采集限制、<code>SCScreenshotManager</code> 在 <code>captureResolution = .best</code> 下的实际分辨率行为、Windows 提权进程拖拽失效的具体绕法。</p>
+<hr />
+<h2 id="_7">八、下一步</h2>
+<ol>
+<li><strong>技术预研（1–2 周）</strong>：用 Tauri 2.0 + <code>xcap</code> 出一个最小 demo —— 全局快捷键唤起 → 全屏覆盖层 → 框选 → 保存 PNG。目标是验证双端包体/启动/内存三项指标能否达标。</li>
+<li><strong>长截图 PoC</strong>：单独做一个滚动拼接的算法验证，Windows 侧可先参考 xland/ScreenCapture 与 scrollshot。</li>
+<li><strong>竞品实测</strong>：把 CleanShot X、Shottr、Snipaste、PixPin、ShareX 全部装一遍，逐条走一遍 P0 功能清单，记录手感差异。</li>
+<li><strong>确定 MVP 范围并排期</strong>：建议 P0 控制在 8–10 周（一人开发），先把 Windows 端做到可用。</li>
+</ol>
+<hr />
+<h3 id="_8">主要来源</h3>
+<ul>
+<li>Apple：<a href="https://developer.apple.com/documentation/screencapturekit">ScreenCaptureKit</a> · <a href="https://developer.apple.com/documentation/screencapturekit/scscreenshotmanager">SCScreenshotManager</a></li>
+<li>Microsoft Learn：<a href="https://learn.microsoft.com/en-us/windows/uwp/audio-video-camera/screen-capture">Screen capture (Windows.Graphics.Capture)</a> · <a href="https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/code-signing-options">Code signing options</a> · <a href="https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-obtainingelements">Obtaining UI Automation Elements</a></li>
+<li>开源参考：<a href="https://github.com/nashaofu/xcap">xcap</a> · <a href="https://github.com/CapSoftware/scap">scap</a> · <a href="https://github.com/ayangweb/tauri-plugin-screenshots">tauri-plugin-screenshots</a> · <a href="https://github.com/xutianyi1999/scrollshot">scrollshot</a> · <a href="https://github.com/xland/ScreenCapture">xland/ScreenCapture</a></li>
+<li>社区经验：V2EX / Reddit / MacRumors / 少数派 相关讨论帖；<a href="https://fatbobman.com/en/posts/screensage-from-pixel-to-meta">fatbobman：SCK 录制踩坑</a> · <a href="https://nonstrict.eu/blog/2023/a-look-at-screencapturekit-on-macos-sonoma">nonstrict：SCK on Sonoma</a></li>
+</ul>
+</div>
+</body>
+</html>

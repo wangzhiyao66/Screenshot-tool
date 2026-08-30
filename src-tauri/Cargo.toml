@@ -1,0 +1,56 @@
+[package]
+name = "shotly"
+version = "0.1.0"
+description = "轻量级跨平台截图工具"
+authors = ["you"]
+edition = "2021"
+rust-version = "1.77.2"
+
+[lib]
+name = "shotly_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [
+  "tray-icon",
+  "image-png",
+  "protocol-asset",
+] }
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+xcap = "0.9"
+image = "0.25"
+base64 = "0.22"
+arboard = "3"
+rand = "0.8"
+# 用 native-tls 而不是 rustls：macOS 走 Security.framework、Windows 走 schannel，
+# 都不需要 C 编译器（rustls 的 ring 在交叉编译时会卡住）
+reqwest = { version = "0.12", default-features = false, features = [
+  "blocking",
+  "json",
+  "native-tls",
+] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc = "0.2"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = { version = "0.61", features = [
+  "Media_Ocr",
+  "Graphics_Imaging",
+  "Globalization",
+  "Storage_Streams",
+  "Foundation_Collections",
+] }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true
