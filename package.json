@@ -1,7 +1,7 @@
 {
   "name": "shotly",
   "private": true,
-  "version": "0.1.6",
+  "version": "0.1.7",
   "type": "module",
   "description": "轻量级跨平台截图工具：截图 / OCR / 翻译 / 贴图 / 缩放",
   "scripts": {

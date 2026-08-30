@@ -137,10 +137,9 @@ jobs:
         run: ls -lhR artifacts
 
       - name: 发布到 GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release create "${GITHUB_REF_NAME}" \
-            --title "${GITHUB_REF_NAME}" \
-            --generate-notes \
-            artifacts/*.exe artifacts/*.dmg
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/*.exe
+            artifacts/*.dmg
+          generate_release_notes: true
