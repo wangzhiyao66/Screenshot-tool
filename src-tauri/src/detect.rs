@@ -267,7 +267,7 @@ mod imp {
                 continue;
             }
             let owner_pid = dict_number(dict, "OwnerPID").unwrap_or(-1.0);
-            // 跳过 Shotly 自己的窗口（覆盖层 / 设置 / 编辑器 / 贴图）
+            // 跳过 Shotly 自己的窗口（覆盖层 / 设置 / 编辑器 / 固定）
             if (owner_pid - self_pid).abs() < 0.5 {
                 continue;
             }

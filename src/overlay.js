@@ -1,4 +1,4 @@
-import { invoke, convertFileSrc } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
 const HANDLE = 8; // 手柄命中半径（CSS px）
@@ -109,19 +109,18 @@ export async function mount(root, params) {
   function loadImage(path) {
     return new Promise((resolve, reject) => {
       let settled = false;
-      const i = new Image();
-      i.onload = () => { settled = true; img = i; resolve(); };
-      i.onerror = async () => {
-        try {
-          const b64 = await invoke("read_png_base64", { path });
-          const j = new Image();
-          j.onload = () => { settled = true; img = j; resolve(); };
-          j.onerror = () => { if (!settled) reject(new Error("快照加载失败")); };
-          j.src = `data:image/png;base64,${b64}`;
-        } catch (e) { if (!settled) reject(e); }
-      };
-      i.src = convertFileSrc(path);
-      setTimeout(() => { if (!settled) reject(new Error("快照加载超时")); }, 8000);
+      const finish = (im) => { if (!settled) { settled = true; img = im; resolve(); } };
+      const fail = (e) => { if (!settled) reject(e); };
+      // 直接走 base64，避免 Tauri 2 的 asset 协议在部分 macOS 上返回 NULL 导致 WebKit 崩溃（CFRelease called with NULL）
+      invoke("read_png_base64", { path })
+        .then((b64) => {
+          const im = new Image();
+          im.onload = () => finish(im);
+          im.onerror = () => fail(new Error("快照解码失败"));
+          im.src = `data:image/png;base64,${b64}`;
+        })
+        .catch((e) => fail(e instanceof Error ? e : new Error(String(e))));
+      setTimeout(() => { if (!settled) fail(new Error("快照加载超时")); }, 8000);
     });
   }
 
@@ -427,7 +426,7 @@ export async function mount(root, params) {
       ["sep", null],
       ["复制", () => finish("copy")],
       ["保存", () => finish("save")],
-      ["贴图", () => finish("pin")],
+      ["固定", () => finish("pin")],
       ["sep", null],
       ["固定区域", () => fixRegion()],
       ["sep", null],

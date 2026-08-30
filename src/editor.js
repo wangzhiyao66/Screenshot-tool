@@ -29,7 +29,7 @@ export async function mount(root, params) {
         <div class="group">
           <button id="ocrBtn">识别文字</button>
           <button id="trBtn">翻译</button>
-          <button id="pinBtn">贴图</button>
+          <button id="pinBtn">固定</button>
           <button id="copyBtn">复制</button>
           <button id="saveBtn">保存</button>
         </div>

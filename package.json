@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.7",
   "type": "module",
-  "description": "轻量级跨平台截图工具：截图 / OCR / 翻译 / 贴图 / 缩放",
+  "description": "轻量级跨平台截图工具：截图 / OCR / 翻译 / 固定 / 缩放",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

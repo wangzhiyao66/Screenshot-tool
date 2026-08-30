@@ -38,7 +38,7 @@
     "copyright": "Shotly",
     "category": "Productivity",
     "shortDescription": "轻量级跨平台截图工具",
-    "longDescription": "截图 · 标注 · 识别文字 · 翻译 · 贴图。基于 Tauri 2，包体小、启动快、常驻内存低。",
+    "longDescription": "截图 · 标注 · 识别文字 · 翻译 · 固定。基于 Tauri 2，包体小、启动快、常驻内存低。",
     "macOS": {
       "minimumSystemVersion": "10.15"
     },

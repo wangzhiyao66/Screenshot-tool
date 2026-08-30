@@ -70,7 +70,7 @@ pub fn run() {
             let menu = MenuBuilder::new(app)
                 .item(&MenuItemBuilder::with_id("capture", "区域截图").build(app)?)
                 .item(&MenuItemBuilder::with_id("fixed", "固定区域截图").build(app)?)
-                .item(&MenuItemBuilder::with_id("pin", "剪贴板贴图").build(app)?)
+                .item(&MenuItemBuilder::with_id("pin", "剪贴板固定").build(app)?)
                 .separator()
                 .item(&MenuItemBuilder::with_id("settings", "设置").build(app)?)
                 .separator()
@@ -335,7 +335,7 @@ fn open_pin(app: &tauri::AppHandle, path: &str) -> Result<(), String> {
 
     let builder = windows::with_transparent(
         WebviewWindowBuilder::new(app, label.clone(), WebviewUrl::App(url.into()))
-            .title("Shotly 贴图")
+            .title("Shotly 固定")
             .inner_size(w as f64 / sf as f64, h as f64 / sf as f64)
             .position(x as f64 / sf as f64, y as f64 / sf as f64)
             .decorations(false)
@@ -539,6 +539,12 @@ fn pick_color(path: String, x: u32, y: u32) -> Result<String, String> {
 #[tauri::command]
 fn ocr_cmd(app: tauri::AppHandle, path: String) -> Result<ocr::OcrResult, String> {
     let langs = app.state::<AppState>().get().ocr_lang;
+    // 未配置语言时回退到中文 + 英文，避免 Vision 因空语言列表而识别为空
+    let langs = if langs.trim().is_empty() {
+        "zh-Hans,en-US".to_string()
+    } else {
+        langs
+    };
     ocr::recognize(&path, &langs)
 }
 

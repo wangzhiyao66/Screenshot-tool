@@ -233,7 +233,7 @@ textarea:focus, input[type="text"]:focus, select:focus { border-color: var(--acc
 .empty { padding: 24px 8px; text-align: center; color: var(--ink-soft); }
 .spin { padding: 24px 8px; text-align: center; color: var(--ink-soft); }
 
-/* ---------- 贴图窗口 ---------- */
+/* ---------- 固定窗口 ---------- */
 .pin-root { position: fixed; inset: 0; overflow: hidden; }
 .pin-img {
   position: absolute; left: 0; top: 0;
@@ -248,9 +248,8 @@ textarea:focus, input[type="text"]:focus, select:focus { border-color: var(--acc
   display: flex; gap: 3px; padding: 5px;
   background: rgba(20, 24, 28, 0.86);
   border-radius: 9px;
-  opacity: 0; transition: opacity .15s;
+  opacity: 1;
 }
-.pin-root:hover .pin-tools { opacity: 1; }
 .pin-tools button {
   background: transparent; border: 0; color: #eceff1; padding: 4px 8px;
 }

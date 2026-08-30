@@ -1,4 +1,4 @@
-import { invoke, convertFileSrc } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
 export async function mount(root, params) {
@@ -19,7 +19,7 @@ export async function mount(root, params) {
         <button id="thru">穿透</button>
         <button id="cp">复制</button>
         <button id="sv">保存</button>
-        <button id="cl" title="关闭">✕</button>
+        <button id="cl" title="取消固定">✕</button>
       </div>
     </div>`;
 
@@ -40,17 +40,14 @@ export async function mount(root, params) {
 
   await new Promise((res, rej) => {
     let settled = false;
-    pi.onload = () => { settled = true; res(); };
-    pi.onerror = async () => {
-      // asset 协议不可用时退化为 base64
-      try {
-        const b64 = await invoke("read_png_base64", { path });
-        pi.onload = () => { settled = true; res(); };
+    // 直接走 base64，避免 Tauri 2 的 asset 协议在部分 macOS 上返回 NULL 导致 WebKit 崩溃
+    invoke("read_png_base64", { path })
+      .then((b64) => {
+        pi.onload = () => { if (!settled) { settled = true; res(); } };
         pi.src = `data:image/png;base64,${b64}`;
-      } catch (e) { if (!settled) rej(e); }
-    };
-    pi.src = convertFileSrc(path);
-    setTimeout(() => { if (!settled) rej(new Error("贴图加载超时")); }, 8000);
+      })
+      .catch((e) => { if (!settled) rej(e instanceof Error ? e : new Error(String(e))); });
+    setTimeout(() => { if (!settled) rej(new Error("固定加载超时")); }, 8000);
   });
 
   const iw = pi.naturalWidth || natW;

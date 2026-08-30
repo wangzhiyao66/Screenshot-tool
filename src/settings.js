@@ -4,14 +4,14 @@ export async function mount(root) {
   root.innerHTML = `
     <div class="set-root">
       <h1>Shotly</h1>
-      <div class="sub">轻量级跨平台截图 · 识别文字 · 翻译 · 贴图</div>
+      <div class="sub">轻量级跨平台截图 · 识别文字 · 翻译 · 固定</div>
 
       <div class="card">
         <h2>快捷键</h2>
         <div class="field"><label>区域截图</label><div><kbd id="hkCapture">—</kbd></div></div>
         <div class="field"><label>固定区域截图</label>
           <div><kbd id="hkFixed">—</kbd> <span class="muted">（在选区工具栏点「固定区域」设置）</span></div></div>
-        <div class="field"><label>剪贴板贴图</label><div><kbd id="hkPin">—</kbd></div></div>
+        <div class="field"><label>剪贴板固定</label><div><kbd id="hkPin">—</kbd></div></div>
         <div class="row" style="margin-top:12px">
           <button id="btnCapture" class="primary">立即截图</button>
           <button id="btnPerm">检查屏幕录制权限</button>
