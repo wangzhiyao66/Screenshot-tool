@@ -58,14 +58,8 @@ jobs:
             arch: "Intel"
             tag: "x64"
     runs-on: macos-latest
-    # 放到 job 层，下面的 if 条件才读得到
     env:
-      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-      APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-      APPLE_ID: ${{ secrets.APPLE_ID }}
-      APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      # 仅用于链接/运行时最低版本，非空、安全
       MACOSX_DEPLOYMENT_TARGET: "10.15"
     steps:
       - uses: actions/checkout@v4
@@ -89,7 +83,21 @@ jobs:
       - name: 安装依赖
         run: npm ci
 
-      # 有证书就签名公证，没有就跳过（产物是未签名的，首次打开需右键 → 打开）
+      # 仅在仓库配置了 Apple 证书时才注入签名/公证变量。
+      # 关键：未配置时必须「完全不设置」APPLE_SIGNING_IDENTITY，
+      # 否则 Tauri 会拿空串去 codesign -s ""，导致打包失败。
+      # 不设置时 Tauri 自动走 ad-hoc 签名（本地已验证可成功）。
+      - name: 准备签名环境变量
+        if: ${{ secrets.APPLE_SIGNING_IDENTITY != '' }}
+        run: |
+          echo "APPLE_SIGNING_IDENTITY=${{ secrets.APPLE_SIGNING_IDENTITY }}" >> "$GITHUB_ENV"
+          echo "APPLE_ID=${{ secrets.APPLE_ID }}" >> "$GITHUB_ENV"
+          echo "APPLE_PASSWORD=${{ secrets.APPLE_PASSWORD }}" >> "$GITHUB_ENV"
+          echo "APPLE_TEAM_ID=${{ secrets.APPLE_TEAM_ID }}" >> "$GITHUB_ENV"
+          echo "APPLE_CERTIFICATE=${{ secrets.APPLE_CERTIFICATE }}" >> "$GITHUB_ENV"
+          echo "APPLE_CERTIFICATE_PASSWORD=${{ secrets.APPLE_CERTIFICATE_PASSWORD }}" >> "$GITHUB_ENV"
+
+      # 有证书才执行；无证书时整段跳过（产物为 ad-hoc 签名，首次打开需右键 → 打开）
       - name: 导入签名证书
         if: env.APPLE_CERTIFICATE != ''
         run: |
