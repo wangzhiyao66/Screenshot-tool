@@ -11,6 +11,7 @@ permissions:
 jobs:
   # ------------------------------ Windows ------------------------------
   build-windows:
+    name: Windows NSIS 安装包
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,30 +33,20 @@ jobs:
       - name: 安装依赖
         run: npm ci
 
-      # Windows 上 Tauri 需要 MSVC 生成工具与 WebView2（runner 已自带）
-      - name: 构建 Windows 安装包
-        run: npm run tauri:build
+      # Windows 上 Tauri 自动调用 NSIS 生成安装包（runner 已自带 MSVC 与 WebView2）
+      - name: 构建 Windows NSIS 安装包
+        run: npm run tauri:build -- --bundles nsis
 
       - name: 上传安装包
         uses: actions/upload-artifact@v4
         with:
-          name: shotly-windows
-          path: |
-            src-tauri/target/release/bundle/nsis/*.exe
-            src-tauri/target/release/bundle/msi/*.msi
+          name: shotly-windows-nsis
+          path: src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
 
-  # ------------------------------- macOS -------------------------------
+  # ------------------------ macOS 双架构通用包 ------------------------
   build-macos:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target: aarch64-apple-darwin
-            arch: "Apple 芯片"
-            tag: "aarch64"
-          - target: x86_64-apple-darwin
-            arch: "Intel"
-            tag: "x64"
+    name: macOS 双架构通用包（Intel + Apple 芯片）
     runs-on: macos-latest
     env:
       # 仅用于链接/运行时最低版本，非空、安全
@@ -63,10 +54,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: 安装 Rust（${{ matrix.target }}）
+      - name: 安装 Rust（含 Intel + Apple 芯片双 target）
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
 
       - name: 缓存 cargo
         uses: Swatinem/rust-cache@v2
@@ -115,30 +106,41 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k shotly build.keychain
           security find-identity -v -p codesigning build.keychain
 
-      # 只打 .app：Tauri 默认的 dmg 会调 AppleScript 排 Finder 窗口，
-      # 在无 GUI 会话的 CI 上必然失败（-10004 权限违例）。dmg 改由 hdiutil 手工生成。
-      - name: 构建 macOS 应用（${{ matrix.arch }}）
-        run: npm run tauri:build -- --target ${{ matrix.target }} --bundles app
-
-      - name: 生成 DMG（${{ matrix.arch }}）
-        run: |
-          set -e
-          VERSION=$(node -p "require('./package.json').version")
-          BUNDLE_DIR="src-tauri/target/${{ matrix.target }}/release/bundle"
-          STAGE=$(mktemp -d)
-          cp -R "$BUNDLE_DIR/macos/Shotly.app" "$STAGE/"
-          ln -s /Applications "$STAGE/Applications"
-          mkdir -p "$BUNDLE_DIR/dmg"
-          hdiutil create \
-            -volname "Shotly ${VERSION}" \
-            -srcfolder "$STAGE" \
-            -ov -format UDZO -imagekey zlib-level=9 \
-            "$BUNDLE_DIR/dmg/Shotly_${VERSION}_${{ matrix.tag }}.dmg"
+      # 构建 universal 通用包：同时编译 aarch64 + x86_64，再用 lipo 合并为单包，
+      # 产物（一个 DMG）在 Intel 与 Apple 芯片 Mac 上均可运行。
+      - name: 构建 macOS 双架构通用包（universal）
+        run: npm run tauri:build -- --target universal-apple-darwin --bundles dmg
 
       - name: 上传安装包
         uses: actions/upload-artifact@v4
         with:
-          name: shotly-macos-${{ matrix.tag }}
-          path: |
-            src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
-            src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app
+          name: shotly-macos-universal
+          path: src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+          if-no-files-found: error
+
+  # ------------------------ 汇总发布到 GitHub Release ------------------------
+  release:
+    name: 汇总发布
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: 下载所有产物
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: 查看产物
+        run: ls -lhR artifacts
+
+      - name: 发布到 GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes \
+            artifacts/*.exe artifacts/*.dmg
