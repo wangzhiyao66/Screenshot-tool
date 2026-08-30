@@ -23,6 +23,19 @@ pub struct Settings {
     pub save_dir: String,
     #[serde(default)]
     pub fixed_regions: HashMap<String, Region>,
+    /// 窗口/控件智能识别：鼠标悬停自动勾勒窗口/控件边框
+    #[serde(default = "default_true")]
+    pub smart_detect: bool,
+    /// 识别粒度：window = 仅窗口；control = 窗口 + 控件（需辅助功能权限）
+    #[serde(default = "default_smart_level")]
+    pub smart_detect_level: String,
+}
+
+fn default_true() -> bool {
+    true
+}
+fn default_smart_level() -> String {
+    "control".into()
 }
 
 impl Default for Settings {
@@ -38,6 +51,8 @@ impl Default for Settings {
             translate_model: "gpt-4o-mini".into(),
             save_dir: String::new(),
             fixed_regions: HashMap::new(),
+            smart_detect: true,
+            smart_detect_level: "control".into(),
         }
     }
 }

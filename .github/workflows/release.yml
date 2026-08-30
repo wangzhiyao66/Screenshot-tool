@@ -5,9 +5,8 @@ on:
     tags: ["v*"]
   workflow_dispatch:
 
-# 需要 contents: write 才能把诊断日志推到 ci-diag 分支
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   # ------------------------------ Windows ------------------------------
@@ -83,22 +82,29 @@ jobs:
       - name: 安装依赖
         run: npm ci
 
-      # 仅在仓库配置了 Apple 证书时才注入签名/公证变量。
-      # 关键：未配置时必须「完全不设置」APPLE_SIGNING_IDENTITY，
-      # 否则 Tauri 会拿空串去 codesign -s ""，导致打包失败。
-      # 不设置时 Tauri 自动走 ad-hoc 签名（本地已验证可成功）。
-      - name: 准备签名环境变量
-        if: ${{ secrets.APPLE_SIGNING_IDENTITY != '' }}
+      # 仅在仓库配置了 Apple 证书 secret 时，才把签名/公证变量导入环境。
+      # 用 bash 内 [ -n "$X" ] 守卫，避免把空串传给 Tauri 导致 codesign -s "" 失败。
+      # 不配置证书时这些变量完全不存在，Tauri 自动走 ad-hoc 签名（本地已验证可成功）。
+      - name: 准备签名环境变量（可选）
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
         run: |
-          echo "APPLE_SIGNING_IDENTITY=${{ secrets.APPLE_SIGNING_IDENTITY }}" >> "$GITHUB_ENV"
-          echo "APPLE_ID=${{ secrets.APPLE_ID }}" >> "$GITHUB_ENV"
-          echo "APPLE_PASSWORD=${{ secrets.APPLE_PASSWORD }}" >> "$GITHUB_ENV"
-          echo "APPLE_TEAM_ID=${{ secrets.APPLE_TEAM_ID }}" >> "$GITHUB_ENV"
-          echo "APPLE_CERTIFICATE=${{ secrets.APPLE_CERTIFICATE }}" >> "$GITHUB_ENV"
-          echo "APPLE_CERTIFICATE_PASSWORD=${{ secrets.APPLE_CERTIFICATE_PASSWORD }}" >> "$GITHUB_ENV"
+          if [ -n "$APPLE_SIGNING_IDENTITY" ]; then
+            echo "APPLE_SIGNING_IDENTITY=$APPLE_SIGNING_IDENTITY" >> "$GITHUB_ENV"
+            echo "APPLE_ID=$APPLE_ID" >> "$GITHUB_ENV"
+            echo "APPLE_PASSWORD=$APPLE_PASSWORD" >> "$GITHUB_ENV"
+            echo "APPLE_TEAM_ID=$APPLE_TEAM_ID" >> "$GITHUB_ENV"
+            echo "APPLE_CERTIFICATE=$APPLE_CERTIFICATE" >> "$GITHUB_ENV"
+            echo "APPLE_CERTIFICATE_PASSWORD=$APPLE_CERTIFICATE_PASSWORD" >> "$GITHUB_ENV"
+          fi
 
-      # 有证书才执行；无证书时整段跳过（产物为 ad-hoc 签名，首次打开需右键 → 打开）
-      - name: 导入签名证书
+      # 有证书才导入 keychain；无证书整段跳过，产物为 ad-hoc 签名
+      - name: 导入签名证书（可选）
         if: env.APPLE_CERTIFICATE != ''
         run: |
           echo "$APPLE_CERTIFICATE" | base64 --decode > cert.p12
@@ -111,9 +117,8 @@ jobs:
 
       # 只打 .app：Tauri 默认的 dmg 会调 AppleScript 排 Finder 窗口，
       # 在无 GUI 会话的 CI 上必然失败（-10004 权限违例）。dmg 改由 hdiutil 手工生成。
-      # 输出同时写入诊断日志，失败时提交到 ci-diag 分支供排查。
       - name: 构建 macOS 应用（${{ matrix.arch }}）
-        run: npm run tauri:build -- --target ${{ matrix.target }} --bundles app > ci-diag-${{ matrix.tag }}.log 2>&1
+        run: npm run tauri:build -- --target ${{ matrix.target }} --bundles app
 
       - name: 生成 DMG（${{ matrix.arch }}）
         run: |
@@ -128,8 +133,7 @@ jobs:
             -volname "Shotly ${VERSION}" \
             -srcfolder "$STAGE" \
             -ov -format UDZO -imagekey zlib-level=9 \
-            "$BUNDLE_DIR/dmg/Shotly_${VERSION}_${{ matrix.tag }}.dmg" >> ci-diag-${{ matrix.tag }}.log 2>&1
-          ls -lh "$BUNDLE_DIR/dmg/" >> ci-diag-${{ matrix.tag }}.log 2>&1
+            "$BUNDLE_DIR/dmg/Shotly_${VERSION}_${{ matrix.tag }}.dmg"
 
       - name: 上传安装包
         uses: actions/upload-artifact@v4
@@ -138,15 +142,3 @@ jobs:
           path: |
             src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
             src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app
-
-      # 失败时把诊断日志推到 ci-diag 分支（孤儿分支，不污染主历史）
-      - name: 上传诊断日志（失败时）
-        if: failure()
-        run: |
-          git config user.email "ci@shotly.local"
-          git config user.name "CI Diagnostics"
-          git checkout --orphan ci-diag
-          git rm -rf --cached . >/dev/null 2>&1 || true
-          git add ci-diag-${{ matrix.tag }}.log
-          git commit -m "ci diag: ${{ matrix.target }} @ ${{ github.run_number }}"
-          git push --force origin ci-diag

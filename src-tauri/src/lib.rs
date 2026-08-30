@@ -1,4 +1,5 @@
 mod capture;
+mod detect;
 mod ocr;
 mod perm;
 mod settings;
@@ -172,6 +173,8 @@ pub fn run() {
             set_fixed_region,
             clear_fixed_region,
             open_settings_cmd,
+            detect_element,
+            check_ax_cmd,
         ])
         .build(tauri::generate_context!())
         .expect("Shotly 启动失败")
@@ -221,6 +224,9 @@ fn begin_capture(app: &tauri::AppHandle, fixed: bool) -> Result<(), String> {
             "imgHeight": s.img_height,
             "scale": s.scale,
             "fixed": fixed_map.get(&s.id.to_string()).cloned(),
+            // 智能识别开关：悬停自动勾勒窗口/控件边框
+            "smartDetect": state.get().smart_detect,
+            "smartDetectLevel": state.get().smart_detect_level,
         });
         state
             .last_payload
@@ -569,4 +575,16 @@ fn clear_fixed_region(app: tauri::AppHandle, monitor_id: u32) -> Result<(), Stri
 #[tauri::command]
 fn open_settings_cmd(app: tauri::AppHandle) -> Result<(), String> {
     open_settings(&app)
+}
+
+/* ============================= 窗口/控件智能识别 ============================= */
+
+#[tauri::command]
+fn detect_element(x: f64, y: f64, level: String) -> Option<detect::DetectedRect> {
+    detect::detect_element(x, y, &level)
+}
+
+#[tauri::command]
+fn check_ax_cmd() -> bool {
+    detect::ax_trusted()
 }

@@ -11,7 +11,8 @@ export async function mount(root, params) {
       <canvas class="ov-canvas"></canvas>
       <div class="ov-tip" style="display:none"></div>
       <div class="ov-bar"></div>
-      <div class="ov-hint">拖拽框选 · 方向键微调 · Enter 完成 · Esc 取消</div>
+      <div class="ov-toggle" id="ovToggle">窗口识别：开</div>
+      <div class="ov-hint">拖拽框选 · 悬停自动识别窗口 · 单击锁定 · 方向键微调 · Enter 完成 · Esc 取消 · W 切换识别</div>
     </div>`;
 
   const canvas = root.querySelector(".ov-canvas");
@@ -19,6 +20,7 @@ export async function mount(root, params) {
   const tip = root.querySelector(".ov-tip");
   const bar = root.querySelector(".ov-bar");
   const hint = root.querySelector(".ov-hint");
+  const toggle = root.querySelector("#ovToggle");
 
   let img = null;
   let imgPath = "";
@@ -31,6 +33,15 @@ export async function mount(root, params) {
   let dpr = window.devicePixelRatio || 1;
   let picking = null;
   let loadToken = 0;
+
+  // 窗口/控件智能识别状态
+  let monitorX = 0, monitorY = 0;          // 本显示器原点（全局逻辑点，相对主屏左上角）
+  let smartDetect = true;                   // 是否启用悬停识别
+  let smartLevel = "control";               // window | control
+  let hoverRect = null;                     // 悬停命中区域（覆盖层本地 CSS px）
+  let hoverLabel = "";
+  let detectBusy = false;
+  let lastDetect = 0;
 
   /* ---------- 初始化：事件驱动，同时用命令兜底防止事件漏接 ---------- */
   const unlisten = await listen("overlay://init", (e) => onInit(e.payload));
@@ -47,6 +58,7 @@ export async function mount(root, params) {
   canvas.addEventListener("dblclick", () => sel && finish("editor"));
   canvas.addEventListener("contextmenu", (e) => { e.preventDefault(); cancel(); });
   window.addEventListener("keydown", onKey);
+  toggle.addEventListener("click", (e) => { e.stopPropagation(); toggleSmart(); });
 
   return;
 
@@ -68,6 +80,15 @@ export async function mount(root, params) {
     // 窗口按物理像素铺满整个显示器，因此图片像素 / 窗口 CSS 宽度 就是换算系数
     k = window.innerWidth > 0 ? img.naturalWidth / window.innerWidth : dpr;
     if (!Number.isFinite(k) || k <= 0) k = dpr || 1;
+
+    // 智能识别：记录显示器原点（物理像素 / scale = 全局逻辑点）与开关
+    monitorX = (payload.x || 0) / (payload.scale || 1);
+    monitorY = (payload.y || 0) / (payload.scale || 1);
+    smartDetect = !!payload.smartDetect;
+    smartLevel = payload.smartDetectLevel || "control";
+    hoverRect = null;
+    toggle.textContent = "窗口识别：" + (smartDetect ? "开" : "关");
+    toggle.classList.toggle("off", !smartDetect);
 
     if (payload.fixed && payload.fixed.w > 4 && payload.fixed.h > 4) {
       sel = clampRect({
@@ -158,9 +179,21 @@ export async function mount(root, params) {
     const dir = hitHandle(mx, my);
     if (dir) { mode = "resize"; resizeDir = dir; dragStart = { mx, my, sel: { ...sel } }; return; }
     if (insideSel(mx, my)) { mode = "move"; dragStart = { mx, my, sel: { ...sel } }; return; }
+
+    // 智能识别：悬停命中窗口/控件时，单击直接锁定该区域（按住 Alt 可强制手动框选）
+    if (smartDetect && hoverRect && !e.altKey) {
+      sel = { ...hoverRect };
+      hoverRect = null;
+      hideBar();
+      draw();
+      showBar();
+      return;
+    }
+
     mode = "draw";
     dragStart = { mx, my };
     sel = { x: mx, y: my, w: 0, h: 0 };
+    hoverRect = null;
     hideBar();
     draw();
   }
@@ -178,8 +211,10 @@ export async function mount(root, params) {
     } else if (mode === "resize") {
       sel = clampRect(resizeBy(resizeDir, dragStart.sel, mouse.x - dragStart.mx, mouse.y - dragStart.my));
     } else {
-      canvas.style.cursor = hitHandle(mouse.x, mouse.y) ? "nwse-resize"
+      canvas.style.cursor = hoverRect ? "pointer"
+        : hitHandle(mouse.x, mouse.y) ? "nwse-resize"
         : insideSel(mouse.x, mouse.y) ? "move" : "crosshair";
+      maybeDetect();
     }
     if (!picking) picking = setTimeout(() => { picking = null; updateColor(); }, 60);
     draw();
@@ -195,7 +230,7 @@ export async function mount(root, params) {
   }
 
   function onUp() {
-    if (mode === "draw" && sel && (sel.w < 3 || sel.h < 3)) { sel = null; draw(); }
+    if (mode === "draw" && sel && (sel.w < 3 || sel.h < 3)) { sel = null; hoverRect = null; draw(); }
     if (mode !== "idle" && sel) showBar();
     mode = "idle";
     draw();
@@ -204,6 +239,7 @@ export async function mount(root, params) {
   function onKey(e) {
     if (e.key === "Escape") { e.preventDefault(); cancel(); return; }
     if (e.key === "Enter" && sel) { e.preventDefault(); finish("editor"); return; }
+    if (e.key === "w" || e.key === "W") { e.preventDefault(); toggleSmart(); return; }
     if (!sel) return;
     const step = e.shiftKey ? 10 : 1;
     const map = {
@@ -216,6 +252,40 @@ export async function mount(root, params) {
       sel = clampRect({ ...sel, x: sel.x + dx, y: sel.y + dy });
       showBar(); draw();
     }
+  }
+
+  /* ==================== 智能识别 ==================== */
+  function maybeDetect() {
+    if (!smartDetect || !img || sel || mode !== "idle") { hoverRect = null; return; }
+    const now = performance.now();
+    if (detectBusy || now - lastDetect < 45) return;
+    lastDetect = now;
+    detectBusy = true;
+    const gx = monitorX + mouse.x;
+    const gy = monitorY + mouse.y;
+    invoke("detect_element", { x: gx, y: gy, level: smartLevel })
+      .then((r) => {
+        if (mode !== "idle" || sel || !smartDetect) { hoverRect = null; return; }
+        if (r && isFinite(r.w) && r.w > 2 && r.h > 2) {
+          hoverRect = { x: r.x - monitorX, y: r.y - monitorY, w: r.w, h: r.h };
+          hoverLabel = (r.title || r.role || "").trim();
+        } else {
+          hoverRect = null;
+        }
+      })
+      .catch(() => { hoverRect = null; })
+      .finally(() => {
+        detectBusy = false;
+        if (mode === "idle" && !sel) draw();
+      });
+  }
+
+  function toggleSmart() {
+    smartDetect = !smartDetect;
+    toggle.textContent = "窗口识别：" + (smartDetect ? "开" : "关");
+    toggle.classList.toggle("off", !smartDetect);
+    if (!smartDetect) hoverRect = null;
+    draw();
   }
 
   async function updateColor() {
@@ -236,6 +306,26 @@ export async function mount(root, params) {
 
     ctx.fillStyle = "rgba(12, 16, 20, 0.42)";
     ctx.fillRect(0, 0, w, h);
+
+    // 智能识别：悬停高亮窗口/控件（聚光 + 蓝色描边）
+    if (hoverRect && !sel) {
+      const { x, y, w: sw, h: sh } = hoverRect;
+      if (img) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x, y, sw, sh);
+        ctx.clip();
+        ctx.drawImage(img, 0, 0, w, h);
+        ctx.restore();
+      }
+      ctx.strokeStyle = "rgba(47, 128, 255, 0.35)";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(x, y, sw, sh);
+      ctx.strokeStyle = "#2f80ff";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x + 1, y + 1, sw - 2, sh - 2);
+      ctx.lineWidth = 1;
+    }
 
     if (sel) {
       const { x, y, w: sw, h: sh } = sel;
@@ -282,8 +372,18 @@ export async function mount(root, params) {
       tip.textContent = `${ph.w} × ${ph.h}` + (parts[1] ? `　${parts[1]}` : "");
     } else {
       tip.style.display = "block";
-      tip.style.left = Math.min(mouse.x + 14, w - 90) + "px";
-      tip.style.top = Math.min(mouse.y + 18, h - 30) + "px";
+      if (hoverRect) {
+        tip.style.left = Math.min(hoverRect.x, w - 240) + "px";
+        tip.style.top = (hoverRect.y > 26
+          ? hoverRect.y - 24
+          : Math.min(hoverRect.y + hoverRect.h + 6, h - 30)) + "px";
+        tip.textContent = (hoverLabel ? hoverLabel + "  " : "") +
+          `${Math.round(hoverRect.w)} × ${Math.round(hoverRect.h)}`;
+      } else {
+        tip.style.left = Math.min(mouse.x + 14, w - 90) + "px";
+        tip.style.top = Math.min(mouse.y + 18, h - 30) + "px";
+        tip.textContent = `${mouse.x}, ${mouse.y}`;
+      }
     }
 
     if ((mode === "draw" || mode === "resize") && img && mouse.x >= 0) drawMagnifier();
@@ -395,6 +495,7 @@ export async function mount(root, params) {
 
   async function cancel() {
     sel = null;
+    hoverRect = null;
     hideBar();
     try { await invoke("close_overlays"); } catch { /* noop */ }
   }

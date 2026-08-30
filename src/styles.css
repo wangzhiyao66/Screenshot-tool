@@ -104,6 +104,25 @@ button.on { background: var(--accent-soft); border-color: var(--accent); color: 
   pointer-events: none;
 }
 
+.ov-toggle {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(47, 128, 255, 0.92);
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  user-select: none;
+  z-index: 11;
+}
+.ov-toggle:hover { background: rgba(47, 128, 255, 1); }
+.ov-toggle.off { background: rgba(20, 24, 28, 0.6); }
+.ov-toggle.off:hover { background: rgba(20, 24, 28, 0.78); }
+
 /* ---------- 编辑器 ---------- */
 .ed-root { display: flex; flex-direction: column; height: 100%; }
 
@@ -252,6 +271,8 @@ textarea:focus, input[type="text"]:focus, select:focus { border-color: var(--acc
 .set-root .sub { color: var(--ink-soft); margin-bottom: 22px; }
 .field { margin-bottom: 16px; }
 .field label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px; }
+.field label.check { display: flex; align-items: center; gap: 6px; font-weight: 400; cursor: pointer; }
+.field label.check input { width: auto; margin: 0; }
 .field .desc { font-size: 11px; color: var(--ink-soft); margin-top: 4px; line-height: 1.6; }
 .row { display: flex; gap: 8px; }
 .row > * { flex: 1; }

@@ -34,6 +34,25 @@ export async function mount(root) {
       </div>
 
       <div class="card">
+        <h2>窗口 / 控件智能识别</h2>
+        <div class="field">
+          <label class="check"><input type="checkbox" id="smartDetect"> 启用（鼠标悬停自动勾勒窗口/控件边框，单击即可锁定该区域）</label>
+        </div>
+        <div class="field">
+          <label>识别粒度</label>
+          <select id="smartLevel">
+            <option value="window">仅窗口</option>
+            <option value="control">窗口 + 控件（需辅助功能权限）</option>
+          </select>
+          <div class="desc">控件级可精确框选按钮、输入框等元素；需在「系统设置 → 隐私与安全性 → 辅助功能」中授予 Shotly 权限。</div>
+        </div>
+        <div class="field">
+          <button id="btnAx">检查辅助功能权限</button>
+          <span class="desc" id="axState" style="margin-left:8px"></span>
+        </div>
+      </div>
+
+      <div class="card">
         <h2>翻译</h2>
         <div class="field">
           <label>翻译服务</label>
@@ -78,6 +97,8 @@ export async function mount(root) {
   root.querySelector("#hkFixed").textContent = s.fixed_hotkey || "—";
   root.querySelector("#hkPin").textContent = s.pin_hotkey || "—";
   root.querySelector("#ocrLang").value = s.ocr_lang || "zh-Hans,en-US";
+  root.querySelector("#smartDetect").checked = s.smart_detect !== false;
+  root.querySelector("#smartLevel").value = s.smart_detect_level || "control";
   root.querySelector("#trProvider").value = s.translate_provider || "google";
   root.querySelector("#trKey").value = s.translate_key || "";
   root.querySelector("#trEndpoint").value = s.translate_endpoint || "";
@@ -95,6 +116,8 @@ export async function mount(root) {
 
   root.querySelector("#btnSave").onclick = async () => {
     s.ocr_lang = root.querySelector("#ocrLang").value;
+    s.smart_detect = root.querySelector("#smartDetect").checked;
+    s.smart_detect_level = root.querySelector("#smartLevel").value;
     s.translate_provider = root.querySelector("#trProvider").value;
     s.translate_key = root.querySelector("#trKey").value.trim();
     s.translate_endpoint = root.querySelector("#trEndpoint").value.trim();
@@ -114,4 +137,13 @@ export async function mount(root) {
       : (st.hint || "未授权，请在系统设置中开启后完全退出并重启本应用。");
   };
   root.querySelector("#btnPerm").click();
+
+  root.querySelector("#btnAx").onclick = async () => {
+    const ok = await invoke("check_ax_cmd");
+    const el = root.querySelector("#axState");
+    el.textContent = ok
+      ? "已授权"
+      : "未授权：请在 系统设置 → 隐私与安全性 → 辅助功能 中勾选 Shotly";
+    el.style.color = ok ? "" : "var(--accent)";
+  };
 }
