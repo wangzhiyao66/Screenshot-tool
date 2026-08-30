@@ -5,6 +5,10 @@ on:
     tags: ["v*"]
   workflow_dispatch:
 
+# 需要 contents: write 才能把诊断日志推到 ci-diag 分支
+permissions:
+  contents: write
+
 jobs:
   # ------------------------------ Windows ------------------------------
   build-windows:
@@ -62,6 +66,7 @@ jobs:
       APPLE_ID: ${{ secrets.APPLE_ID }}
       APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      MACOSX_DEPLOYMENT_TARGET: "10.15"
     steps:
       - uses: actions/checkout@v4
 
@@ -98,8 +103,9 @@ jobs:
 
       # 只打 .app：Tauri 默认的 dmg 会调 AppleScript 排 Finder 窗口，
       # 在无 GUI 会话的 CI 上必然失败（-10004 权限违例）。dmg 改由 hdiutil 手工生成。
+      # 输出同时写入诊断日志，失败时提交到 ci-diag 分支供排查。
       - name: 构建 macOS 应用（${{ matrix.arch }}）
-        run: npm run tauri:build -- --target ${{ matrix.target }} --bundles app
+        run: npm run tauri:build -- --target ${{ matrix.target }} --bundles app > ci-diag-${{ matrix.tag }}.log 2>&1
 
       - name: 生成 DMG（${{ matrix.arch }}）
         run: |
@@ -114,8 +120,8 @@ jobs:
             -volname "Shotly ${VERSION}" \
             -srcfolder "$STAGE" \
             -ov -format UDZO -imagekey zlib-level=9 \
-            "$BUNDLE_DIR/dmg/Shotly_${VERSION}_${{ matrix.tag }}.dmg"
-          ls -lh "$BUNDLE_DIR/dmg/"
+            "$BUNDLE_DIR/dmg/Shotly_${VERSION}_${{ matrix.tag }}.dmg" >> ci-diag-${{ matrix.tag }}.log 2>&1
+          ls -lh "$BUNDLE_DIR/dmg/" >> ci-diag-${{ matrix.tag }}.log 2>&1
 
       - name: 上传安装包
         uses: actions/upload-artifact@v4
@@ -124,3 +130,15 @@ jobs:
           path: |
             src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
             src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app
+
+      # 失败时把诊断日志推到 ci-diag 分支（孤儿分支，不污染主历史）
+      - name: 上传诊断日志（失败时）
+        if: failure()
+        run: |
+          git config user.email "ci@shotly.local"
+          git config user.name "CI Diagnostics"
+          git checkout --orphan ci-diag
+          git rm -rf --cached . >/dev/null 2>&1 || true
+          git add ci-diag-${{ matrix.tag }}.log
+          git commit -m "ci diag: ${{ matrix.target }} @ ${{ github.run_number }}"
+          git push --force origin ci-diag
