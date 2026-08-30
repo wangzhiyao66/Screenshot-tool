@@ -3,18 +3,18 @@
 一款基于 **Tauri 2（Rust + 原生 Web）** 的轻量级截图工具，支持 macOS 与 Windows。
 具备**窗口 / 控件智能识别**（鼠标悬停自动勾勒窗口边框，单击即锁定该区域）等特性。
 
-> 当前版本：**v0.1.7**
+> 当前版本：**v0.1.8**
 
 ---
 
-## 一、下载地址（v0.1.7）
+## 一、下载地址（v0.1.8）
 
 | 平台 | 包类型 | 文件 | 架构 | 下载 |
 | --- | --- | --- | --- | --- |
-| macOS | 磁盘镜像（DMG） | `Shotly_0.1.7_universal.dmg` | **Intel + Apple 芯片通用** | [下载](https://github.com/wangzhiyao66/Screenshot-tool/releases/download/v0.1.7/Shotly_0.1.7_universal.dmg) |
-| Windows | 安装包（NSIS） | `Shotly_0.1.7_x64-setup.exe` | x64 | [下载](https://github.com/wangzhiyao66/Screenshot-tool/releases/download/v0.1.7/Shotly_0.1.7_x64-setup.exe) |
+| macOS | 磁盘镜像（DMG） | `Shotly_0.1.8_universal.dmg` | **Intel + Apple 芯片通用** | [下载](https://github.com/wangzhiyao66/Screenshot-tool/releases/download/v0.1.8/Shotly_0.1.8_universal.dmg) |
+| Windows | 安装包（NSIS） | `Shotly_0.1.8_x64-setup.exe` | x64 | [下载](https://github.com/wangzhiyao66/Screenshot-tool/releases/download/v0.1.8/Shotly_0.1.8_x64-setup.exe) |
 
-- 发布页（含更新说明）：<https://github.com/wangzhiyao66/Screenshot-tool/releases/tag/v0.1.7>
+- 发布页（含更新说明）：<https://github.com/wangzhiyao66/Screenshot-tool/releases/tag/v0.1.8>
 - 构建记录（GitHub 官方 Runner）：<https://github.com/wangzhiyao66/Screenshot-tool/actions/runs/33318728222>
 
 > macOS 包为 **universal（通用）** 单包，同时内嵌 `x86_64` 与 `arm64` 两种架构，Intel Mac 与 Apple 芯片 Mac 均可直接运行，无需区分下载。
@@ -24,7 +24,7 @@
 ## 二、安装方式
 
 ### macOS
-1. 下载 `Shotly_0.1.7_universal.dmg` 并双击挂载。
+1. 下载 `Shotly_0.1.8_universal.dmg` 并双击挂载。
 2. 将 **Shotly** 拖入「应用程序」文件夹。
 3. 首次打开时，macOS 会因 **ad-hoc 签名**（未配置 Apple 开发者证书）弹出「无法验证开发者」的 Gatekeeper 拦截。解决方法（任选其一）：
    - 在「访达」中**右键点击 Shotly → 打开**，在弹窗中点「打开」；
@@ -32,7 +32,7 @@
    - 之后即可正常启动，不再提示。
 
 ### Windows
-1. 下载 `Shotly_0.1.7_x64-setup.exe` 并双击运行。
+1. 下载 `Shotly_0.1.8_x64-setup.exe` 并双击运行。
 2. 按 NSIS 安装向导完成安装（安装包已内置 WebView2 运行时依赖，一般无需手动安装）。
 3. 由于安装包**未做代码签名**，Windows SmartScreen 可能提示「Windows 已保护你的电脑」。点击「更多信息 → 仍要运行」即可继续；后续不再拦截。
 

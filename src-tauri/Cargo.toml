@@ -1,6 +1,6 @@
 [package]
 name = "shotly"
-version = "0.1.7"
+version = "0.1.8"
 description = "轻量级跨平台截图工具"
 authors = ["you"]
 edition = "2021"
